@@ -1,26 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# roundtrip.sh — compile Rust source to LLVM IR, then parse it with llvm-ir
+# roundtrip.sh — compile this crate to LLVM IR, then parse it with itself
 #
 # Usage:
-#   ./scripts/roundtrip.sh [--features <llvm-version>] [rust_source.rs]
+#   ./scripts/roundtrip.sh [--features <llvm-version>]
 #
-#   If no Rust source is given, generates a simple fibonacci function.
-#   LLVM version defaults to the feature in Cargo.toml or llvm-19.
+#   Compiles the llvm-ir crate sources to LLVM bitcode via cargo rustc,
+#   then uses the crate's own parse example to load and display the result.
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 FEATURE="${LLVM_FEATURE:-llvm-19}"
-RUST_SRC=""
-CLEANUP_FILES=()
-
-cleanup() {
-    for f in "${CLEANUP_FILES[@]}"; do
-        rm -f "$f"
-    done
-}
-trap cleanup EXIT
 
 # Parse args
 while [[ $# -gt 0 ]]; do
@@ -34,64 +25,30 @@ while [[ $# -gt 0 ]]; do
             exit 1
             ;;
         *)
-            RUST_SRC="$1"
-            shift
+            echo "Usage: $0 [--features <llvm-version>]"
+            exit 1
             ;;
     esac
 done
 
-# Generate Rust source if not provided
-if [[ -z "$RUST_SRC" ]]; then
-    RUST_SRC="$(mktemp /tmp/llvm_ir_demo_XXXXXX.rs)"
-    CLEANUP_FILES+=("$RUST_SRC")
-    cat > "$RUST_SRC" << 'RUSTEOF'
-#[no_mangle]
-pub fn fib(n: u32) -> u32 {
-    match n {
-        0 => 0,
-        1 => 1,
-        _ => fib(n - 1) + fib(n - 2),
-    }
-}
+# Step 1: Compile the crate to LLVM bitcode with cargo rustc
+echo "=== Compiling llvm-ir crate to LLVM bitcode ==="
+cd "$PROJECT_DIR"
+RUSTFLAGS="--emit=llvm-bc -C opt-level=0" cargo rustc --features "$FEATURE" --lib -- -C lto=no 2>&1 | tail -3
 
-#[no_mangle]
-pub fn add_one(x: i32) -> i32 {
-    x + 1
-}
-
-fn main() {
-    println!("fib(10) = {}", fib(10));
-    println!("add_one(41) = {}", add_one(41));
-}
-RUSTEOF
-    echo "=== Generated demo source ==="
-    cat "$RUST_SRC"
-    echo
+# Find the generated .bc file
+BC_FILE=$(find target/debug/deps -name 'llvm_ir-*.bc' -not -name '*.cgu.*' | head -1)
+if [[ -z "$BC_FILE" ]]; then
+    echo "Failed to find .bc file in target/debug/deps/"
+    exit 1
 fi
-
-# Compile to LLVM bitcode
-BC_FILE="${RUST_SRC%.rs}.bc"
-LL_FILE="${RUST_SRC%.rs}.ll"
-CLEANUP_FILES+=("$BC_FILE" "$LL_FILE")
-echo "=== Compiling to LLVM IR with rustc ==="
-rustc --emit=llvm-bc,llvm-ir -C opt-level=0 -o "$BC_FILE" "$RUST_SRC" --edition 2021
-echo "  -> $LL_FILE"
+echo "  -> $BC_FILE ($(wc -c < "$BC_FILE" | tr -d ' ') bytes)"
 echo
 
-# Parse with llvm-ir (prefer bitcode, fallback to text IR)
+# Step 2: Parse it with the crate's own parse example
 echo "=== Parsing with llvm-ir ($FEATURE) ==="
-cd "$PROJECT_DIR"
 set +e
 OUTPUT=$(cargo run --example parse --features "$FEATURE" -- "$BC_FILE" 2>&1)
-EXIT_CODE=$?
-set -e
-if [ $EXIT_CODE -eq 0 ]; then
-    echo "$OUTPUT"
-    exit 0
-fi
-echo "Bitcode parse failed, trying text IR..."
-set +e
-OUTPUT=$(cargo run --example parse --features "$FEATURE" -- "$LL_FILE" 2>&1)
 EXIT_CODE=$?
 set -e
 if [ $EXIT_CODE -eq 0 ]; then
