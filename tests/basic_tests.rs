@@ -1762,7 +1762,8 @@ fn issue4() {
         expected_num_function_attributes - expected_num_enum_attrs
     );
 
-    if cfg!(feature = "llvm-21") {
+    #[cfg(feature = "llvm-21")]
+    {
         assert_eq!(func.parameters.len(), 1);
         let first_param_attrs = &func.parameters[0].attributes;
         assert_eq!(first_param_attrs.len(), 1);
