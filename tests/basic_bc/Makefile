@@ -12,6 +12,7 @@ CLANG18=$(LLVM18PATH)/bin/clang
 CLANG19=$(LLVM19PATH)/bin/clang
 CLANG20=$(LLVM20PATH)/bin/clang
 CLANG21=$(LLVM21PATH)/bin/clang
+CLANG22=$(LLVM22PATH)/bin/clang
 CLANGXX8=clang++-8
 CLANGXX9=clang++-9
 CLANGXX10=clang++-10 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk
@@ -26,6 +27,7 @@ CLANGXX18=$(LLVM18PATH)/bin/clang++
 CLANGXX19=$(LLVM19PATH)/bin/clang++
 CLANGXX20=$(LLVM20PATH)/bin/clang++
 CLANGXX21=$(LLVM21PATH)/bin/clang++
+CLANGXX22=$(LLVM22PATH)/bin/clang++
 RUSTC=rustc
 RUSTFLAGS=--crate-type=lib
 LLVMAS8=$(LLVM8PATH)/bin/llvm-as
@@ -42,6 +44,7 @@ LLVMAS18=$(LLVM18PATH)/bin/llvm-as
 LLVMAS19=$(LLVM19PATH)/bin/llvm-as
 LLVMAS20=$(LLVM20PATH)/bin/llvm-as
 LLVMAS21=$(LLVM21PATH)/bin/llvm-as
+LLVMAS22=$(LLVM22PATH)/bin/llvm-as
 
 COBJS = \
 	hello.bc hello.ll hello.bc-g hello.ll-g \
@@ -75,6 +78,7 @@ all: \
 	$(patsubst %,llvm19/%,$(COBJS)) \
 	$(patsubst %,llvm20/%,$(COBJS)) \
 	$(patsubst %,llvm21/%,$(COBJS)) \
+	$(patsubst %,llvm22/%,$(COBJS)) \
 	$(patsubst %,llvm8/%,$(LLOBJS)) \
 	$(patsubst %,llvm9/%,$(LLOBJS)) \
 	$(patsubst %,llvm10/%,$(LLOBJS)) \
@@ -89,12 +93,14 @@ all: \
 	$(patsubst %,llvm19/%,$(LLOBJS)) \
 	$(patsubst %,llvm20/%,$(LLOBJS)) \
 	$(patsubst %,llvm21/%,$(LLOBJS)) \
+	$(patsubst %,llvm22/%,$(LLOBJS)) \
 	$(patsubst %,rust/%,$(RUSTOBJS)) \
 	llvm11/float_types.bc llvm12/float_types.bc llvm13/float_types.bc \
 	llvm14/float_types.bc llvm15/float_types.bc llvm16/float_types.bc \
 	llvm17/float_types.bc llvm18/float_types.bc llvm19/float_types.bc \
 	llvm20/float_types.bc \
 	llvm21/float_types.bc \
+	llvm22/float_types.bc \
 
 .PHONY: cxx
 cxx: \
@@ -112,6 +118,7 @@ cxx: \
 	$(patsubst %,cxx-llvm19/%,$(CXXOBJS)) \
 	$(patsubst %,cxx-llvm20/%,$(CXXOBJS)) \
 	$(patsubst %,cxx-llvm21/%,$(CXXOBJS)) \
+	$(patsubst %,cxx-llvm22/%,$(CXXOBJS)) \
 
 # default to -O3 unless overridden by a more specific rule
 %: CFLAGS := -O3
@@ -158,6 +165,9 @@ llvm20/%.ll : %.c
 llvm21/%.ll : %.c
 	mkdir -p llvm21
 	$(CLANG21) $(CFLAGS) -S -emit-llvm $^ -o $@
+llvm22/%.ll : %.c
+	mkdir -p llvm22
+	$(CLANG22) $(CFLAGS) -S -emit-llvm $^ -o $@
 
 llvm8/%.bc : %.c
 	mkdir -p llvm8
@@ -201,6 +211,9 @@ llvm20/%.bc : %.c
 llvm21/%.bc : %.c
 	mkdir -p llvm21
 	$(CLANG21) $(CFLAGS) -c -emit-llvm $^ -o $@
+llvm22/%.bc : %.c
+	mkdir -p llvm22
+	$(CLANG22) $(CFLAGS) -c -emit-llvm $^ -o $@
 
 cxx-llvm8/%.ll : %.cpp
 	mkdir -p cxx-llvm8
@@ -244,6 +257,9 @@ cxx-llvm20/%.ll : %.cpp
 cxx-llvm21/%.ll : %.cpp
 	mkdir -p cxx-llvm21
 	$(CLANGXX21) $(CFLAGS) -S -emit-llvm $^ -o $@
+cxx-llvm22/%.ll : %.cpp
+	mkdir -p cxx-llvm22
+	$(CLANGXX22) $(CFLAGS) -S -emit-llvm $^ -o $@
 
 cxx-llvm8/%.bc : %.cpp
 	mkdir -p cxx-llvm8
@@ -287,6 +303,9 @@ cxx-llvm20/%.bc : %.cpp
 cxx-llvm21/%.bc : %.cpp
 	mkdir -p cxx-llvm21
 	$(CLANGXX21) $(CFLAGS) -c -emit-llvm $^ -o $@
+cxx-llvm22/%.bc : %.cpp
+	mkdir -p cxx-llvm22
+	$(CLANGXX22) $(CFLAGS) -c -emit-llvm $^ -o $@
 
 rust/%.ll : %.rs
 	mkdir -p rust

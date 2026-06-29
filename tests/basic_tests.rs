@@ -49,6 +49,8 @@ fn llvm_bc_dir() -> PathBuf {
         Path::new(BC_DIR).join("llvm20")
     } else if cfg!(feature = "llvm-21") {
         Path::new(BC_DIR).join("llvm21")
+    } else if cfg!(feature = "llvm-22") {
+        Path::new(BC_DIR).join("llvm22")
     } else {
         unimplemented!("new llvm version?")
     }
@@ -82,6 +84,8 @@ fn cxx_llvm_bc_dir() -> PathBuf {
         Path::new(BC_DIR).join("cxx-llvm20")
     } else if cfg!(feature = "llvm-21") {
         Path::new(BC_DIR).join("cxx-llvm21")
+    } else if cfg!(feature = "llvm-22") {
+        Path::new(BC_DIR).join("cxx-llvm22")
     } else {
         unimplemented!("new llvm version?")
     }
@@ -113,7 +117,7 @@ fn hellobc() {
         module.target_triple,
         Some("x86_64-apple-macosx12.0.0".into())
     );
-    #[cfg(feature = "llvm-21")]
+    #[cfg(any(feature = "llvm-21", feature = "llvm-22"))]
     assert_eq!(
         module.target_triple,
         Some("arm64-apple-macosx26.0.0".into())
@@ -220,7 +224,7 @@ fn loopbc() {
     assert_eq!(module.type_of(param0), module.types.i32());
     assert_eq!(module.type_of(param1), module.types.i32());
 
-    if cfg!(feature = "llvm-21") {
+    if cfg!(feature = "llvm-21") || cfg!(feature = "llvm-22") {
         assert_eq!(func.basic_blocks.len(), 4);
         let bb2 = &func.basic_blocks[0];
         assert_eq!(bb2.name, Name::Number(2));
@@ -1718,8 +1722,8 @@ fn issue4() {
     } else if cfg!(feature = "llvm-15") {
         // LLVM 15+ adds "argmemonly"
         17
-    } else if cfg!(feature = "llvm-21") {
-        // LLVM 21 drops a couple of attributes in this bitcode
+    } else if cfg!(feature = "llvm-21") || cfg!(feature = "llvm-22") {
+        // LLVM 21+ drops a couple of attributes in this bitcode
         14
     } else if cfg!(feature = "llvm-16-or-greater") {
         // LLVM 16+ merges "argmemonly", "inaccessiblememonly", etc. into a single memory attribute

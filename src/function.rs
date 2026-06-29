@@ -658,7 +658,9 @@ impl AttributesData {
             "strictfp",
             "uwtable",
             #[cfg(feature = "llvm-16-or-greater")]
-            "memory"
+            "memory",
+            #[cfg(feature = "llvm-22-or-greater")]
+            "modular-format",
         ]
         .iter()
         .filter_map(|&attrname| {

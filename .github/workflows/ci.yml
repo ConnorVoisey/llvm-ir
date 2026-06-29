@@ -27,6 +27,9 @@ jobs:
         - 17
         - 18
         - 19
+        - 20
+        - 21
+        - 22
 
     steps:
       - name: Checkout sources
