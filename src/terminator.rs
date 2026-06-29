@@ -792,6 +792,19 @@ impl Switch {
                             .expect("Failed to find switch destination in map")
                             .clone()
                     });
+                #[cfg(feature = "llvm-22-or-greater")]
+                let dest_vals = {
+                    let num_cases = num_dests - 1;
+                    // LLVM 22: case values are no longer operands.
+                    // LLVMGetSwitchCaseValue expects i > 0 (successor index,
+                    // where 0 = default dest; case values start at i = 1).
+                    (0 .. num_cases).map(|i| {
+                        Constant::from_llvm_ref(unsafe {
+                            llvm_sys_221::core::LLVMGetSwitchCaseValue(term, (i + 1) as u32)
+                        }, ctx)
+                    })
+                };
+                #[cfg(not(feature = "llvm-22-or-greater"))]
                 let dest_vals = (1 .. num_dests).map(|i| {
                     Constant::from_llvm_ref(unsafe { LLVMGetOperand(term, 2 * i) }, ctx)
                     // 2*i because empirically, operand 1 is the default dest, and operands 3/5/7/etc are the successor blocks
