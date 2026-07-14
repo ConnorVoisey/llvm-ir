@@ -1084,6 +1084,14 @@ pub struct GetElementPtr {
     pub address: ConstantRef,
     pub indices: Vec<ConstantRef>,
     pub in_bounds: bool,
+    /// The type the indices walk over. With opaque pointers this cannot
+    /// be recovered from the address operand's type, so it is read from
+    /// the constant expression itself (`LLVMGetGEPSourceElementType`
+    /// unwraps `GEPOperator`, which covers constant expressions as well
+    /// as instructions), mirroring `instruction::GetElementPtr`.
+    #[cfg(feature = "llvm-14-or-greater")]
+    pub source_element_type: TypeRef,
+
 }
 
 impl_constexpr!(GetElementPtr, GetElementPtr);
@@ -1792,6 +1800,10 @@ impl GetElementPtr {
                     .collect()
             },
             in_bounds: unsafe { LLVMIsInBounds(expr) } != 0,
+            #[cfg(feature = "llvm-14-or-greater")]
+            source_element_type: ctx
+                .types
+                .type_from_llvm_ref(unsafe { LLVMGetGEPSourceElementType(expr) }),
         }
     }
 }
