@@ -91,6 +91,7 @@ pub struct FunctionDeclaration {
     /// See [LLVM 14 docs on Garbage Collector Strategy Names](https://releases.llvm.org/14.0.0/docs/LangRef.html#gc)
     pub garbage_collector_name: Option<String>,
     pub debugloc: Option<DebugLoc>,
+    pub function_attributes: Vec<FunctionAttribute>,
 }
 
 #[derive(PartialEq, Clone, Debug, Hash)]
@@ -165,18 +166,18 @@ pub enum MemoryEffect {
     None,
     Read,
     Write,
-    ReadWrite
+    ReadWrite,
 }
 
 impl MemoryEffect {
     // See https://github.com/llvm/llvm-project/blob/7cbf1a2591520c2491aa35339f227775f4d3adf6/llvm/include/llvm/Support/ModRef.h#L27
-    pub(crate) fn from_llvm_bits(val : u64) -> Self {
+    pub(crate) fn from_llvm_bits(val: u64) -> Self {
         match val {
             0b00 => Self::None,
             0b01 => Self::Read,
             0b10 => Self::Write,
             0b11 => Self::ReadWrite,
-            _ => panic!("Memory effect given unexpected bits {}", val)
+            _ => panic!("Memory effect given unexpected bits {}", val),
         }
     }
 }
@@ -242,7 +243,7 @@ pub enum FunctionAttribute {
     Memory {
         default: MemoryEffect,
         argmem: MemoryEffect,
-        inaccessible_mem: MemoryEffect
+        inaccessible_mem: MemoryEffect,
     },
     StringAttribute {
         kind: String,
@@ -429,6 +430,27 @@ impl FunctionDeclaration {
             alignment: unsafe { LLVMGetAlignment(func) },
             garbage_collector_name: unsafe { get_gc(func) },
             debugloc: DebugLoc::from_llvm_no_col(func, &mut ctx.string_interner),
+            function_attributes: {
+                let num_attrs =
+                    unsafe { LLVMGetAttributeCountAtIndex(func, LLVMAttributeFunctionIndex) };
+                if num_attrs > 0 {
+                    let mut attrs: Vec<LLVMAttributeRef> = Vec::with_capacity(num_attrs as usize);
+                    unsafe {
+                        LLVMGetAttributesAtIndex(
+                            func,
+                            LLVMAttributeFunctionIndex,
+                            attrs.as_mut_ptr(),
+                        );
+                        attrs.set_len(num_attrs as usize);
+                    };
+                    attrs
+                        .into_iter()
+                        .map(|attr| FunctionAttribute::from_llvm_ref(attr, &ctx.attrsdata))
+                        .collect()
+                } else {
+                    vec![]
+                }
+            },
         };
         (decl, local_ctr)
     }
@@ -488,27 +510,7 @@ impl Function {
                     .map(|bb| BasicBlock::from_llvm_ref(bb, ctx, &mut func_ctx))
                     .collect()
             },
-            function_attributes: {
-                let num_attrs =
-                    unsafe { LLVMGetAttributeCountAtIndex(func, LLVMAttributeFunctionIndex) };
-                if num_attrs > 0 {
-                    let mut attrs: Vec<LLVMAttributeRef> = Vec::with_capacity(num_attrs as usize);
-                    unsafe {
-                        LLVMGetAttributesAtIndex(
-                            func,
-                            LLVMAttributeFunctionIndex,
-                            attrs.as_mut_ptr(),
-                        );
-                        attrs.set_len(num_attrs as usize);
-                    };
-                    attrs
-                        .into_iter()
-                        .map(|attr| FunctionAttribute::from_llvm_ref(attr, &ctx.attrsdata))
-                        .collect()
-                } else {
-                    vec![]
-                }
-            },
+            function_attributes: decl.function_attributes,
             return_attributes: decl.return_attributes,
             linkage: decl.linkage,
             visibility: decl.visibility,
@@ -806,14 +808,14 @@ impl FunctionAttribute {
                     // See https://github.com/llvm/llvm-project/blob/7cbf1a2591520c2491aa35339f227775f4d3adf6/llvm/include/llvm/Support/ModRef.h#L63
                     // for the breakdown of the encoding logic
 
-                    let encoded_argmem           = (value >> 0) & 0b11;
+                    let encoded_argmem = (value >> 0) & 0b11;
                     let encoded_inaccessible_mem = (value >> 2) & 0b11;
-                    let encoded_default_mem      = (value >> 4) & 0b11;
+                    let encoded_default_mem = (value >> 4) & 0b11;
 
                     Self::Memory {
                         default: MemoryEffect::from_llvm_bits(encoded_default_mem),
                         argmem: MemoryEffect::from_llvm_bits(encoded_argmem),
-                        inaccessible_mem: MemoryEffect::from_llvm_bits(encoded_inaccessible_mem)
+                        inaccessible_mem: MemoryEffect::from_llvm_bits(encoded_inaccessible_mem),
                     }
                 },
                 Some(s) => panic!("Unhandled value from lookup_function_attr: {:?}", s),
