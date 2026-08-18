@@ -2744,7 +2744,9 @@ fn param_and_func_attributes() {
         assert_eq!(f.function_attributes[0], FunctionAttribute::Memory {
             default: MemoryEffect::None,
             argmem: MemoryEffect::None,
-            inaccessible_mem: MemoryEffect::None
+            inaccessible_mem: MemoryEffect::None,
+            #[cfg(feature = "llvm-21-or-greater")]
+            errno_mem: MemoryEffect::None
         });
 
         let f = module.get_func_by_name("f.default_read").unwrap();
@@ -2752,7 +2754,9 @@ fn param_and_func_attributes() {
         assert_eq!(f.function_attributes[0], FunctionAttribute::Memory {
             default: MemoryEffect::Read,
             argmem: MemoryEffect::Read,
-            inaccessible_mem: MemoryEffect::Read
+            inaccessible_mem: MemoryEffect::Read,
+            #[cfg(feature = "llvm-21-or-greater")]
+            errno_mem: MemoryEffect::Read
         });
 
         let f = module.get_func_by_name("f.default_write").unwrap();
@@ -2760,7 +2764,9 @@ fn param_and_func_attributes() {
         assert_eq!(f.function_attributes[0], FunctionAttribute::Memory {
             default: MemoryEffect::Write,
             argmem: MemoryEffect::Write,
-            inaccessible_mem: MemoryEffect::Write
+            inaccessible_mem: MemoryEffect::Write,
+            #[cfg(feature = "llvm-21-or-greater")]
+            errno_mem: MemoryEffect::Write
         });
 
         let f = module.get_func_by_name("f.default_readwrite").unwrap();
@@ -2768,7 +2774,9 @@ fn param_and_func_attributes() {
         assert_eq!(f.function_attributes[0], FunctionAttribute::Memory {
             default: MemoryEffect::ReadWrite,
             argmem: MemoryEffect::ReadWrite,
-            inaccessible_mem: MemoryEffect::ReadWrite
+            inaccessible_mem: MemoryEffect::ReadWrite,
+            #[cfg(feature = "llvm-21-or-greater")]
+            errno_mem: MemoryEffect::ReadWrite
         });
 
         let f = module.get_func_by_name("f.default_none_arg_readwrite").unwrap();
@@ -2776,7 +2784,9 @@ fn param_and_func_attributes() {
         assert_eq!(f.function_attributes[0], FunctionAttribute::Memory {
             default: MemoryEffect::None,
             argmem: MemoryEffect::ReadWrite,
-            inaccessible_mem: MemoryEffect::None
+            inaccessible_mem: MemoryEffect::None,
+            #[cfg(feature = "llvm-21-or-greater")]
+            errno_mem: MemoryEffect::None
         });
 
         let f = module.get_func_by_name("f.default_readwrite_arg_none").unwrap();
@@ -2784,7 +2794,9 @@ fn param_and_func_attributes() {
         assert_eq!(f.function_attributes[0], FunctionAttribute::Memory {
             default: MemoryEffect::ReadWrite,
             argmem: MemoryEffect::None,
-            inaccessible_mem: MemoryEffect::ReadWrite
+            inaccessible_mem: MemoryEffect::ReadWrite,
+            #[cfg(feature = "llvm-21-or-greater")]
+            errno_mem: MemoryEffect::ReadWrite
         });
 
         let f = module.get_func_by_name("f.arg_read").unwrap();
@@ -2792,7 +2804,9 @@ fn param_and_func_attributes() {
         assert_eq!(f.function_attributes[0], FunctionAttribute::Memory {
             default: MemoryEffect::None,
             argmem: MemoryEffect::Read,
-            inaccessible_mem: MemoryEffect::None
+            inaccessible_mem: MemoryEffect::None,
+            #[cfg(feature = "llvm-21-or-greater")]
+            errno_mem: MemoryEffect::None
         });
 
         let f = module.get_func_by_name("f.inaccessiblemem_read").unwrap();
@@ -2800,7 +2814,9 @@ fn param_and_func_attributes() {
         assert_eq!(f.function_attributes[0], FunctionAttribute::Memory {
             default: MemoryEffect::None,
             argmem: MemoryEffect::None,
-            inaccessible_mem: MemoryEffect::Read
+            inaccessible_mem: MemoryEffect::Read,
+            #[cfg(feature = "llvm-21-or-greater")]
+            errno_mem: MemoryEffect::None
         });
 
         let f = module.get_func_by_name("f.default_read_inaccessiblemem_write_arg_none").unwrap();
@@ -2808,7 +2824,9 @@ fn param_and_func_attributes() {
         assert_eq!(f.function_attributes[0], FunctionAttribute::Memory {
             default: MemoryEffect::Read,
             argmem: MemoryEffect::None,
-            inaccessible_mem: MemoryEffect::Write
+            inaccessible_mem: MemoryEffect::Write,
+            #[cfg(feature = "llvm-21-or-greater")]
+            errno_mem: MemoryEffect::Read
         });
     }
 }

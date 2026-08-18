@@ -25,6 +25,9 @@ llvm_test!(
     atomic_no_syncscope
 );
 llvm_test!("tests/llvm_bc/attributes-3.3.ll.bc", attributes);
+// On LLVM 17+, the bitcode auto-upgrader aborts the process with
+// "LLVM ERROR: Invalid alignment argument" when reading this file.
+#[cfg(feature = "llvm-16-or-lower")]
 llvm_test!(
     "tests/llvm_bc/auto_upgrade_intrinsics.bc",
     auto_upgrade_intrinsics
